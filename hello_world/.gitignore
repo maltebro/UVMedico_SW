@@ -55,6 +55,8 @@ dkms.conf
 .DS_Store
 
 build/
+sdkconfig.old
+sdkconfig
 
 # Jetbrains CLion IDE
 cmake-build-debug/

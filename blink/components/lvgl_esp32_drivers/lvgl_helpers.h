@@ -33,8 +33,6 @@ extern "C" {
  * color format being used, for RGB565 each pixel needs 2 bytes.
  * When using the mono theme, the display pixels can be represented in one bit,
  * so the buffer size can be divided by 8, e.g. see SSD1306 display size. */
-
-/* Maximal horizontal and vertical resolution to support by the library.*/
 #define LV_HOR_RES_MAX          (480)
 #define LV_VER_RES_MAX          (320)
 
@@ -56,7 +54,7 @@ extern "C" {
 #elif defined CONFIG_LV_TFT_DISPLAY_CONTROLLER_ILI9486
 #define DISP_BUF_SIZE  (LV_HOR_RES_MAX * 40)
 #elif defined CONFIG_LV_TFT_DISPLAY_CONTROLLER_ILI9488
-#define DISP_BUF_SIZE  (LV_HOR_RES_MAX * 40)
+#define DISP_BUF_SIZE  (LV_HOR_RES_MAX * 20)
 #elif defined CONFIG_LV_TFT_DISPLAY_CONTROLLER_ILI9341
 #define DISP_BUF_SIZE  (LV_HOR_RES_MAX * 40)
 #elif defined CONFIG_LV_TFT_DISPLAY_CONTROLLER_SSD1306

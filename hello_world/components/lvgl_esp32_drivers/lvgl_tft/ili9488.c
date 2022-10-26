@@ -14,7 +14,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "expander.h"
 /*********************
  *      DEFINES
  *********************/
@@ -39,6 +38,8 @@ static void ili9488_set_orientation(uint8_t orientation);
 static void ili9488_send_cmd(uint8_t cmd);
 static void ili9488_send_data(void * data, uint16_t length);
 static void ili9488_send_color(void * data, uint16_t length);
+
+int cnt = 0;
 
 /**********************
  *  STATIC VARIABLES
@@ -75,29 +76,22 @@ void ili9488_init(void)
 		{ILI9488_CMD_DISPLAY_ON, {0x00}, 0x80},
 		{0, {0}, 0xff},
 	};
-/*
+
 	//Initialize non-SPI GPIOs
         gpio_pad_select_gpio(ILI9488_DC);
 	gpio_set_direction(ILI9488_DC, GPIO_MODE_OUTPUT);
         gpio_pad_select_gpio(ILI9488_RST);
 	gpio_set_direction(ILI9488_RST, GPIO_MODE_OUTPUT);
-*/
-	//expand9_set_ch_direction(7, DIRECTION_OUTPUT );
-	//expand9_set_ch_direction(9, DIRECTION_OUTPUT );
+
 #if ILI9488_ENABLE_BACKLIGHT_CONTROL
-/*
         gpio_pad_select_gpio(ILI9488_BCKL);
 	gpio_set_direction(ILI9488_BCKL, GPIO_MODE_OUTPUT);
-*/
-	//expand9_set_ch_direction(6, DIRECTION_OUTPUT );
 #endif
 
 	//Reset the display
-	//gpio_set_level(ILI9488_RST, 0);
-	expand9_write_ch(9,CH_OUTPUT_OFF);
+	gpio_set_level(ILI9488_RST, 0);
 	vTaskDelay(100 / portTICK_RATE_MS);
-	//gpio_set_level(ILI9488_RST, 1);
-	expand9_write_ch(9,CH_OUTPUT_ON);
+	gpio_set_level(ILI9488_RST, 1);
 	vTaskDelay(100 / portTICK_RATE_MS);
 
 	ESP_LOGI(TAG, "ILI9488 initialization.");
@@ -119,22 +113,17 @@ void ili9488_init(void)
 
 	ili9488_enable_backlight(true);
 
-        ili9488_set_orientation(CONFIG_LV_DISPLAY_ORIENTATION);
+        ili9488_set_orientation(3); //CONFIG_LV_DISPLAY_ORIENTATION er original og sætter PORTRAIT_INVERTED.
 }
-uint8_t *dispBuffer = 0;
 
 // Flush function based on mvturnho repo
 void ili9488_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_map)
 {
     uint32_t size = lv_area_get_width(area) * lv_area_get_height(area);
-//ESP_LOGW(TAG, "size %d",size);
     lv_color16_t *buffer_16bit = (lv_color16_t *) color_map;
     uint8_t *mybuf;
-	if(dispBuffer == 0) {
-		dispBuffer= heap_caps_malloc(20000, MALLOC_CAP_DMA);
-	}
     do {
-        mybuf = dispBuffer;//heap_caps_malloc(3 * size * sizeof(uint8_t), MALLOC_CAP_DMA);
+        mybuf = (uint8_t *) heap_caps_malloc(3 * size * sizeof(uint8_t), MALLOC_CAP_DMA);
         if (mybuf == NULL)  ESP_LOGW(TAG, "Could not allocate enough DMA memory!");
     } while (mybuf == NULL);
 
@@ -179,9 +168,9 @@ void ili9488_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * col
 	ili9488_send_cmd(ILI9488_CMD_MEMORY_WRITE);
 
 	ili9488_send_color((void *) mybuf, size * 3);
-//	heap_caps_free(mybuf);
+	heap_caps_free(mybuf);
 
-	vTaskDelay(pdMS_TO_TICKS(5));
+	vTaskDelay(pdMS_TO_TICKS(10));
 	lv_disp_flush_ready(drv);
 }
 
@@ -193,13 +182,11 @@ void ili9488_enable_backlight(bool backlight)
 
 #if (ILI9488_BCKL_ACTIVE_LVL==1)
     tmp = backlight ? 1 : 0;
-	expand9_write_ch(6,CH_OUTPUT_ON);
 #else
     tmp = backlight ? 0 : 1;
-	expand9_write_ch(6,CH_OUTPUT_OFF);
 #endif
 
-    //gpio_set_level(ILI9488_BCKL, tmp);
+    gpio_set_level(ILI9488_BCKL, tmp);
 #endif
 }
 
@@ -211,28 +198,21 @@ void ili9488_enable_backlight(bool backlight)
 static void ili9488_send_cmd(uint8_t cmd)
 {
     disp_wait_for_pending_transactions();
-    //gpio_set_level(ILI9488_DC, 0);	 /*Command mode*/
-	
-	//expand9_write_ch(7,CH_OUTPUT_OFF);
-	expand9_lcd_send_cmd ();
+    gpio_set_level(ILI9488_DC, 0);	 /*Command mode*/
     disp_spi_send_data(&cmd, 1);
 }
 
 static void ili9488_send_data(void * data, uint16_t length)
 {
     disp_wait_for_pending_transactions();
-    //gpio_set_level(ILI9488_DC, 1);	 /*Data mode*/
-	//expand9_write_ch(7,CH_OUTPUT_ON);
-	expand9_lcd_send_data ();
+    gpio_set_level(ILI9488_DC, 1);	 /*Data mode*/
     disp_spi_send_data(data, length);
 }
 
 static void ili9488_send_color(void * data, uint16_t length)
 {
     disp_wait_for_pending_transactions();
-    //gpio_set_level(ILI9488_DC, 1);   /*Data mode*/
-	//expand9_write_ch(7,CH_OUTPUT_ON);
-	expand9_lcd_send_data ();
+    gpio_set_level(ILI9488_DC, 1);   /*Data mode*/
     disp_spi_send_colors(data, length);
 }
 

@@ -3,7 +3,6 @@
 # Define sources and include dirs
 COMPONENT_SRCDIRS := . lvgl_tft lvgl_touch
 COMPONENT_ADD_INCLUDEDIRS := .
-EXTRA_COMPONENT_DIRS = ./main
 
 # LVGL is supposed to be used as a ESP-IDF component
 # -> lvlg is already in the include path
